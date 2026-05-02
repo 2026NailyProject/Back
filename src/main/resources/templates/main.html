@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Naily Main</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #f8f8f8;
+        }
+
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px;
+            background: white;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .main h1 {
+            font-size: 36px;
+        }
+
+        .btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: #ddd;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">Naily</div>
+        <div id="authArea">
+            <!-- JS로 채워짐 -->
+        </div>
+    </div>
+
+    <div class="main">
+        <h1>Own your Nail</h1>
+        <p>지금 바로 시작해보세요</p>
+        <button class="btn" onclick="goLogin()">시작하기 ></button>
+    </div>
+</div>
+
+<script>
+    // 페이지 로드 시 토큰 확인
+    window.onload = function() {
+        const token = localStorage.getItem('token');
+        const authArea = document.getElementById('authArea');
+
+        if (token) {
+            // 로그인 상태 → 로그아웃 버튼
+            authArea.innerHTML = '<a href="#" onclick="logout()">로그아웃</a>';
+        } else {
+            // 비로그인 상태 → Sign in 버튼
+            authArea.innerHTML = '<a href="/login">Sign in</a>';
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        window.location.reload();
+    }
+
+    function goLogin() {
+        window.location.href = '/login';
+    }
+</script>
+
+</body>
+</html>
