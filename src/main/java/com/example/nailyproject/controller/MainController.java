@@ -20,4 +20,9 @@ public class MainController {
     public String signupPage() {
         return "signup";
     }
+
+    @GetMapping("/profile")
+    public String profileTestPage() {
+        return "profile";
+    }
 }

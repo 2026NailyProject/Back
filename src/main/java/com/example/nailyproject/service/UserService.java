@@ -6,6 +6,7 @@ import com.example.nailyproject.dto.request.LoginRequestDto;
 import com.example.nailyproject.dto.request.SignupRequestDto;
 import com.example.nailyproject.dto.response.LoginResponseDto;
 import com.example.nailyproject.dto.response.SignupResponseDto;
+import com.example.nailyproject.dto.response.UserProfileResponseDto;
 import com.example.nailyproject.entity.User;
 import com.example.nailyproject.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -78,5 +79,10 @@ public class UserService {
                 .build();
     }
 
+    //프로필 조회
+    @Transactional(readOnly = true)
+    public UserProfileResponseDto getProfile(User user) {
+        return UserProfileResponseDto.from(user);
+    }
 
 }

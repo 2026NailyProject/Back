@@ -7,6 +7,7 @@ import com.example.nailyproject.dto.request.SignupRequestDto;
 import com.example.nailyproject.dto.response.ApiResponse;
 import com.example.nailyproject.dto.response.LoginResponseDto;
 import com.example.nailyproject.dto.response.SignupResponseDto;
+import com.example.nailyproject.dto.response.UserProfileResponseDto;
 import com.example.nailyproject.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.example.nailyproject.entity.User;
 
 @RestController
 @RequiredArgsConstructor
@@ -44,6 +47,18 @@ public class UserController {
         return ResponseEntity
                 .status(HttpStatus.OK) // 200
                 .body(ApiResponse.success(200, "로그인 성공.", data));
+    }
+
+    // 내 프로필 조회 GET /users/me
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserProfileResponseDto>> getProfile(
+            @AuthenticationPrincipal User user) {
+
+        UserProfileResponseDto data = userService.getProfile(user);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "사용자 프로필 조회 성공.", data)
+        );
     }
 
 //409 - 이메일/닉네임 중복
