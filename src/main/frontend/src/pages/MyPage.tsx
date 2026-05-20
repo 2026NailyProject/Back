@@ -52,63 +52,159 @@ export function MyPage() {
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   // 페이지 로드 시 프로필 조회
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem("accessToken");
+
     if (!token) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
-    fetch('/api/users/me', {
-      method: 'GET',
+    fetch("/api/users/me", {
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     })
-        .then(res => res.json())
-        .then(result => {
-          if (result.ok) {
-            setName(result.data.name);
-            setNickname(result.data.nickname);
-            setEmail(result.data.email);
-          } else {
-            // 토큰 만료 등 인증 오류 시 로그인 페이지로
-            localStorage.removeItem('accessToken');
-            navigate('/login');
+        .then(async (res) => {
+          const result = await res.json();
+
+          if (!res.ok || !result.ok) {
+            throw new Error(result.message || "프로필 조회 실패");
           }
+
+          setName(result.data.name);
+          setNickname(result.data.nickname);
+          setEmail(result.data.email);
         })
-        .catch(() => setErrorMsg('프로필을 불러오는 데 실패했습니다.'));
+        .catch(() => {
+          localStorage.removeItem("accessToken");
+          navigate("/login");
+        });
   }, [navigate]);
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // 추후 정보 수정 API 연결
+
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    const token = localStorage.getItem("accessToken");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      // 1. 닉네임 수정
+      const profileRes = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nickname: nickname,
+        }),
+      });
+
+      const profileResult = await profileRes.json();
+
+      if (!profileRes.ok || !profileResult.ok) {
+        throw new Error(profileResult.message || "닉네임 수정에 실패했습니다.");
+      }
+
+      setName(profileResult.data.name);
+      setNickname(profileResult.data.nickname);
+      setEmail(profileResult.data.email);
+
+      // 2. 비밀번호는 입력했을 때만 수정
+      if (currentPassword.trim() || newPassword.trim()) {
+        if (!currentPassword.trim() || !newPassword.trim()) {
+          throw new Error(
+              "비밀번호를 변경하려면 현재 비밀번호와 새 비밀번호를 모두 입력해주세요."
+          );
+        }
+
+        const passwordRes = await fetch("/api/users/me/password", {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            currentPassword: currentPassword,
+            newPassword: newPassword,
+          }),
+        });
+
+        const passwordResult = await passwordRes.json();
+
+        if (!passwordRes.ok || !passwordResult.ok) {
+          throw new Error(passwordResult.message || "비밀번호 수정에 실패했습니다.");
+        }
+
+        setCurrentPassword("");
+        setNewPassword("");
+      }
+
+      setSuccessMsg("정보가 수정되었습니다.");
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMsg(error.message);
+      } else {
+        setErrorMsg("정보 수정 중 오류가 발생했습니다.");
+      }
+    }
   }
 
   return (
       <>
         <RouteStylesheet href={mypageStylesUrl} />
+
         <header className="site-header">
           <div className="container header-inner">
             <Link className="brand" to="/">
               Naily
             </Link>
+
             <nav className="header-nav" aria-label="페이지 이동">
-              <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : undefined)}>
+              <NavLink
+                  to="/"
+                  end
+                  className={({ isActive }) => (isActive ? "active" : undefined)}
+              >
                 메인
               </NavLink>
-              <NavLink to="/login" className={({ isActive }) => (isActive ? "active" : undefined)}>
+
+              <NavLink
+                  to="/login"
+                  className={({ isActive }) => (isActive ? "active" : undefined)}
+              >
                 로그인
               </NavLink>
-              <NavLink to="/signup" className={({ isActive }) => (isActive ? "active" : undefined)}>
+
+              <NavLink
+                  to="/signup"
+                  className={({ isActive }) => (isActive ? "active" : undefined)}
+              >
                 회원가입
               </NavLink>
-              <NavLink to="/mypage" className={({ isActive }) => (isActive ? "active" : undefined)}>
+
+              <NavLink
+                  to="/mypage"
+                  className={({ isActive }) => (isActive ? "active" : undefined)}
+              >
                 마이페이지
               </NavLink>
             </nav>
@@ -118,10 +214,26 @@ export function MyPage() {
         <main className="page">
           <div className="container">
             <h1 className="page-title">마이페이지</h1>
-            <p className="page-subtitle">내 프로필과 저장 기록을 확인하고 관리할 수 있습니다.</p>
+            <p className="page-subtitle">
+              내 프로필과 저장 기록을 확인하고 관리할 수 있습니다.
+            </p>
 
             {errorMsg && (
-                <p style={{ color: 'red', fontSize: '14px', marginBottom: '16px' }}>{errorMsg}</p>
+                <p style={{ color: "red", fontSize: "14px", marginBottom: "16px" }}>
+                  {errorMsg}
+                </p>
+            )}
+
+            {successMsg && (
+                <p
+                    style={{
+                      color: "green",
+                      fontSize: "14px",
+                      marginBottom: "16px",
+                    }}
+                >
+                  {successMsg}
+                </p>
             )}
 
             <section className="layout" aria-label="마이페이지 콘텐츠">
@@ -138,14 +250,17 @@ export function MyPage() {
                       <dt>이름</dt>
                       <dd>{name}</dd>
                     </div>
+
                     <div className="meta-item">
                       <dt>닉네임</dt>
                       <dd>{nickname}</dd>
                     </div>
+
                     <div className="meta-item">
                       <dt>이메일</dt>
                       <dd>{email}</dd>
                     </div>
+
                     <div className="meta-item">
                       <dt>비밀번호</dt>
                       <dd>********</dd>
@@ -156,7 +271,17 @@ export function MyPage() {
                 <article className="card edit-card" aria-label="정보 수정">
                   <div className="section-head">
                     <h2>정보 수정</h2>
-                    <button className="btn" type="button">
+
+                    <button
+                        className="btn"
+                        type="button"
+                        onClick={() => {
+                          setCurrentPassword("");
+                          setNewPassword("");
+                          setErrorMsg("");
+                          setSuccessMsg("");
+                        }}
+                    >
                       취소
                     </button>
                   </div>
@@ -164,13 +289,9 @@ export function MyPage() {
                   <form className="form-grid" onSubmit={onSubmit}>
                     <div className="field">
                       <label htmlFor="name">이름</label>
-                      <input
-                          id="name"
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                      />
+                      <input id="name" type="text" value={name} readOnly />
                     </div>
+
                     <div className="field">
                       <label htmlFor="nickname-edit">닉네임</label>
                       <input
@@ -180,25 +301,39 @@ export function MyPage() {
                           onChange={(e) => setNickname(e.target.value)}
                       />
                     </div>
+
                     <div className="field">
                       <label htmlFor="email-edit">이메일</label>
                       <input
                           id="email-edit"
                           type="email"
                           value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          readOnly
                       />
                     </div>
+
                     <div className="field">
-                      <label htmlFor="password">비밀번호 변경</label>
+                      <label htmlFor="current-password">현재 비밀번호</label>
                       <input
-                          id="password"
+                          id="current-password"
+                          type="password"
+                          placeholder="현재 비밀번호 입력"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label htmlFor="new-password">새 비밀번호</label>
+                      <input
+                          id="new-password"
                           type="password"
                           placeholder="새 비밀번호 입력"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
                       />
                     </div>
+
                     <button className="btn primary" type="submit">
                       정보 수정 저장
                     </button>

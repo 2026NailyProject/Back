@@ -4,6 +4,8 @@ import com.example.nailyproject.auth.DuplicateException;
 import com.example.nailyproject.auth.InvalidCredentialsException;
 import com.example.nailyproject.dto.request.LoginRequestDto;
 import com.example.nailyproject.dto.request.SignupRequestDto;
+import com.example.nailyproject.dto.request.UpdateNicknameRequestDto;
+import com.example.nailyproject.dto.request.UpdatePasswordRequestDto;
 import com.example.nailyproject.dto.response.ApiResponse;
 import com.example.nailyproject.dto.response.LoginResponseDto;
 import com.example.nailyproject.dto.response.SignupResponseDto;
@@ -58,6 +60,31 @@ public class UserController {
 
         return ResponseEntity.ok(
                 ApiResponse.success(200, "사용자 프로필 조회 성공.", data)
+        );
+    }
+    // 닉네임 수정 PATCH /users/me
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<UserProfileResponseDto>> updateNickname(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody UpdateNicknameRequestDto request) {
+
+        UserProfileResponseDto data = userService.updateNickname(user, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "닉네임 수정 성공.", data)
+        );
+    }
+
+    // 비밀번호 수정 PATCH /users/me/password
+    @PatchMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> updatePassword(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody UpdatePasswordRequestDto request) {
+
+        userService.updatePassword(user, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(200, "비밀번호 수정 성공.", null)
         );
     }
 

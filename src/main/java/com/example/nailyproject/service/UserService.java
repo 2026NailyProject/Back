@@ -4,6 +4,8 @@ import com.example.nailyproject.auth.DuplicateException;
 import com.example.nailyproject.auth.JwtTokenProvider;
 import com.example.nailyproject.dto.request.LoginRequestDto;
 import com.example.nailyproject.dto.request.SignupRequestDto;
+import com.example.nailyproject.dto.request.UpdateNicknameRequestDto;
+import com.example.nailyproject.dto.request.UpdatePasswordRequestDto;
 import com.example.nailyproject.dto.response.LoginResponseDto;
 import com.example.nailyproject.dto.response.SignupResponseDto;
 import com.example.nailyproject.dto.response.UserProfileResponseDto;
@@ -85,4 +87,51 @@ public class UserService {
         return UserProfileResponseDto.from(user);
     }
 
+    // 닉네임 수정
+    public UserProfileResponseDto updateNickname(User user, UpdateNicknameRequestDto request) {
+
+        String newNickname = request.getNickname();
+
+        if (newNickname == null || newNickname.isBlank()) {
+            throw new IllegalArgumentException("닉네임을 입력해주세요.");
+        }
+
+        if (!user.getNickname().equals(newNickname)
+                && userRepository.existsByNickname(newNickname)) {
+            throw DuplicateException.nickname();
+        }
+
+        // DB에서 다시 조회해서 영속성 컨텍스트에 올리기
+        User managedUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+
+        managedUser.updateNickname(newNickname);
+
+        return UserProfileResponseDto.from(managedUser);
+    }
+
+    // 비밀번호 수정
+    public void updatePassword(User user, UpdatePasswordRequestDto request) {
+
+        if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+            throw new IllegalArgumentException("현재 비밀번호를 입력해주세요.");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new IllegalArgumentException("새 비밀번호를 입력해주세요.");
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException();
+        }
+
+        // DB에서 다시 조회해서 영속성 컨텍스트에 올리기
+        User managedUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+
+        String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
+        managedUser.updatePasswordHash(encodedNewPassword);
+    }
 }
